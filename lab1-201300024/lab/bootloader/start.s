@@ -35,19 +35,19 @@
 .code16
 .global start
 start:
-      cli                             #关闭中断
-                                      #启动A20总线
+    cli                             #关闭中断
+                                    #启动A20总线
     
     
-      data32 addr32 lgdt gdtDesc      #加载GDTR
-                                      #启动保护模式
+    data32 addr32 lgdt gdtDesc      #加载GDTR
+                                    #启动保护模式
     
-                                      #设置CR0的PE位（第0位）为1
-      data32 ljmp $0x08, $start32     #长跳转切换至保护模式
+                                    #设置CR0的PE位（第0位）为1
+    data32 ljmp $0x08, $start32     #长跳转切换至保护模式
 
 .code32
 start32:
-      ...                             #初始化DS ES FS GS SS 初始化栈顶指针ESP
+    ...                             #初始化DS ES FS GS SS 初始化栈顶指针ESP
 
   	pushl $13 # pushing the size to print into stack
   	pushl $message # pushing the address of message into stack
