@@ -3,7 +3,9 @@
 #define SECTSIZE 512
 
 void bootMain(void) {
-	
+	readSect((void *)0x8c00,1);
+	asm("mov $0x8c00,%eax;"
+		"jmp *%eax;");
 }
 
 void waitDisk(void) { // waiting for disk

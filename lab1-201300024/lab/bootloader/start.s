@@ -124,7 +124,7 @@ start32:
 	movw %ax, %ss
 	movw $0x18, %ax 
 	movw %ax, %gs
-	movl $0x7ce0, %eax 
+	movl $0x8000, %eax 
 	movl %eax, %esp
 
  	jmp bootMain                    #jump to bootMain in boot.c
@@ -139,7 +139,7 @@ gdt:
     .word 0xffff,0x0000             #数据段描述符
     .byte 0x00,0x92,0xcf,0x00
         
-    .word 0xffff,0x7ce0             #视频段描述符
+    .word 0xffff,0x8000             #视频段描述符
     .byte 0x0b,0x92,0xcf,0x00
 
 gdtDesc:
