@@ -9,12 +9,28 @@ struct GateDescriptor idt[NR_IRQ]; // NR_IRQ=256, defined in x86/cpu.h
 
 /* 初始化一个中断门(interrupt gate) */
 static void setIntr(struct GateDescriptor *ptr, uint32_t selector, uint32_t offset, uint32_t dpl) {
-	// TODO: 初始化interrupt gate
+	// DONE: 初始化interrupt gate
+	ptr->offset_15_0 = offset & 0x0000ffff;
+	ptr->offset_31_16 = offset >> 16;
+	ptr->segment = KSEL(selector); //(dpl==0) ? KSEL(selector) : USEL(selector);
+	ptr->pad0 = 0;
+	ptr->type = 0b1110;
+	ptr->system = 0;
+	ptr->privilege_level = dpl;
+	ptr->present = 1;
 }
 
 /* 初始化一个陷阱门(trap gate) */
 static void setTrap(struct GateDescriptor *ptr, uint32_t selector, uint32_t offset, uint32_t dpl) {
-	// TODO: 初始化trap gate
+	// DONE: 初始化trap gate
+	ptr->offset_15_0 = offset & 0x0000ffff;
+	ptr->offset_31_16 = offset >> 16;
+	ptr->segment = KSEL(selector); //(dpl==0) ? KSEL(selector) : USEL(selector);
+	ptr->pad0 = 0;
+	ptr->type = 0b1111;
+	ptr->system = 0;
+	ptr->privilege_level = dpl;
+	ptr->present = 1;
 }
 
 /* 声明函数，这些函数在汇编代码里定义 */
@@ -29,9 +45,9 @@ void irqGProtectFault(); // 0xd
 void irqPageFault(); // 0xe
 void irqAlignCheck(); // 0x11
 void irqSecException(); // 0x1e
-void irqKeyboard(); 
+void irqKeyboard(); // 0x21 
 
-void irqSyscall();
+void irqSyscall(); // 0x80
 
 void initIdt() {
 	int i;
@@ -45,10 +61,20 @@ void initIdt() {
 	 */
 	/* Exceptions with error code */
 	setTrap(idt + 0x8, SEG_KCODE, (uint32_t)irqDoubleFault, DPL_KERN);
-	// TODO: 填好剩下的表项
+	// DONE: 填好剩下的表项
+	setTrap(idt + 0xa, SEG_KCODE, (uint32_t)irqInvalidTSS, DPL_KERN);
+	setTrap(idt + 0xb, SEG_KCODE, (uint32_t)irqSegNotPresent, DPL_KERN);
+	setTrap(idt + 0xc, SEG_KCODE, (uint32_t)irqStackSegFault, DPL_KERN);
+	setTrap(idt + 0xd, SEG_KCODE, (uint32_t)irqGProtectFault, DPL_KERN);
+	setTrap(idt + 0xe, SEG_KCODE, (uint32_t)irqPageFault, DPL_KERN);
+	setTrap(idt + 0x11, SEG_KCODE, (uint32_t)irqAlignCheck, DPL_KERN);
+	setTrap(idt + 0x1e, SEG_KCODE, (uint32_t)irqSecException, DPL_KERN);
+
+	setIntr(idt + 0x21, SEG_KCODE, (uint32_t)irqKeyboard, DPL_KERN);
 	
 	/* Exceptions with DPL = 3 */
-	// TODO: 填好剩下的表项 
+	// DONE: 填好剩下的表项 
+	setIntr(idt + 0x80, SEG_KCODE, (uint32_t)irqSyscall, DPL_USER);
 
 	/* 写入IDT */
 	saveIdt(idt, sizeof(idt));

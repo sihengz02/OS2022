@@ -27,11 +27,11 @@ void bootMain(void) {
 		readSect((void*)(elf + i*512), 1+i);
 	}
 
-	// TODO: 填写kMainEntry、phoff、offset
+	// FIXME: 填写kMainEntry、phoff、offset
 	kMainEntry = (void(*)(void))((struct ELFHeader *)elf)->entry;
 	phoff = ((struct ELFHeader *)elf)->phoff;
 	offset = ((struct ProgramHeader *)(elf + phoff))->off;
-	
+
 	for (i = 0; i < 200 * 512; i++) {
 		*(unsigned char *)(elf + i) = *(unsigned char *)(elf + i + offset);
 	}
