@@ -8,6 +8,7 @@ extern uint32_t keyBuffer[MAX_KEYBUFFER_SIZE];
 extern int bufferHead;
 extern int bufferTail;
 
+int tail = 0;
 
 void GProtectFaultHandle(struct TrapFrame *tf);
 
@@ -31,7 +32,18 @@ void irqHandle(struct TrapFrame *tf) { // pointer tf = esp
 	//asm volatile("movw %%ax, %%fs"::"a"(KSEL(SEG_KDATA)));
 	//asm volatile("movw %%ax, %%gs"::"a"(KSEL(SEG_KDATA)));
 	switch(tf->irq) {
-		// TODO: 填好中断处理程序的调用
+		// DONE: 填好中断处理程序的调用
+		case -1:
+			break;
+		case 0xd:
+			GProtectFaultHandle(tf);
+			break;
+		case 0x21:
+			KeyboardHandle(tf);
+			break;
+		case 0x80:
+			syscallHandle(tf);
+			break;
 		default:assert(0);
 	}
 }
@@ -45,10 +57,45 @@ void KeyboardHandle(struct TrapFrame *tf){
 	uint32_t code = getKeyCode();
 	if(code == 0xe){ // 退格符
 		// TODO: 要求只能退格用户键盘输入的字符串，且最多退到当行行首
+		if(displayCol>0){ //&& displayCol>tail){
+			displayCol--;
+			uint16_t data = 0 | (0x0c << 8);
+			int pos = (80*displayRow + displayCol)*2;
+			asm volatile("movw %0, (%1)"::"r"(data),"r"(pos+0xb8000));
+		}
 	}else if(code == 0x1c){ // 回车符
 		// TODO: 处理回车情况
+		//keyBuffer[bufferTail ++] = '\n';
+		//bufferTail %= MAX_KEYBUFFER_SIZE;
+		displayRow ++;
+		displayCol = 0;
+		//tail = 0;
+		if(displayRow == 25){
+			scrollScreen();
+			displayRow = 24;
+			displayCol = 0;
+		}
 	}else if(code < 0x81){ // 正常字符
 		// TODO: 注意输入的大小写的实现、不可打印字符的处理
+		char ch = getChar(code);
+		if(ch != 0){
+			//putChar(ch);
+			uint16_t data = ch | (0x0c<<8);
+			//keyBuffer[bufferTail ++] = ch;
+			//bufferTail %= MAX_KEYBUFFER_SIZE;
+			int pos = (80*displayRow + displayCol)*2;
+			asm volatile("movw %0, (%1)"::"r"(data),"r"(pos+0xb8000));
+			displayCol ++;
+			if(displayCol == 80){
+				displayCol = 0;
+				displayRow ++;
+				if(displayRow == 25){
+					scrollScreen();
+					displayRow = 24;
+					displayCol = 0;
+				}
+			}
+		}
 	}
 	updateCursor(displayRow, displayCol);
 }
