@@ -56,27 +56,27 @@ void GProtectFaultHandle(struct TrapFrame *tf){
 void KeyboardHandle(struct TrapFrame *tf){
 	uint32_t code = getKeyCode();
 	if(code == 0xe){ // 退格符
-		// TODO: 要求只能退格用户键盘输入的字符串，且最多退到当行行首
-		if(displayCol>0){ //&& displayCol>tail){
-			displayCol--;
+		// FIXME: 要求只能退格用户键盘输入的字符串，且最多退到当行行首
+		if(displayCol>0 && displayCol>tail){
+			displayCol --;
 			uint16_t data = 0 | (0x0c << 8);
 			int pos = (80*displayRow + displayCol)*2;
 			asm volatile("movw %0, (%1)"::"r"(data),"r"(pos+0xb8000));
 		}
 	}else if(code == 0x1c){ // 回车符
-		// TODO: 处理回车情况
+		// FIXME: 处理回车情况
 		//keyBuffer[bufferTail ++] = '\n';
 		//bufferTail %= MAX_KEYBUFFER_SIZE;
 		displayRow ++;
 		displayCol = 0;
-		//tail = 0;
+		tail = 0;
 		if(displayRow == 25){
 			scrollScreen();
 			displayRow = 24;
 			displayCol = 0;
 		}
 	}else if(code < 0x81){ // 正常字符
-		// TODO: 注意输入的大小写的实现、不可打印字符的处理
+		// FIXME: 注意输入的大小写的实现、不可打印字符的处理
 		char ch = getChar(code);
 		if(ch != 0){
 			//putChar(ch);
@@ -122,7 +122,7 @@ void syscallWrite(struct TrapFrame *tf) {
 }
 
 void syscallPrint(struct TrapFrame *tf) {
-	int sel =  //TODO: segment selector for user data, need further modification
+	int sel = USEL(SEG_UDATA); //DONE: segment selector for user data, need further modification
 	char *str = (char*)tf->edx;
 	int size = tf->ebx;
 	int i = 0;
@@ -132,9 +132,32 @@ void syscallPrint(struct TrapFrame *tf) {
 	asm volatile("movw %0, %%es"::"m"(sel));
 	for (i = 0; i < size; i++) {
 		asm volatile("movb %%es:(%1), %0":"=r"(character):"r"(str+i));
-		// TODO: 完成光标的维护和打印到显存
+		// DONE: 完成光标的维护和打印到显存
+		if(character !='\n'){
+			data = character | (0x0c << 8);
+			pos = (80*displayRow + displayCol)*2;
+			asm volatile("movw %0, (%1)"::"r"(data),"r"(pos+0xb8000));
+			displayCol ++;
+			if(displayCol == 80){
+				displayCol = 0;
+				displayRow ++;
+				if(displayRow == 25){
+					scrollScreen();
+					displayRow = 24;
+					displayCol = 0;
+				}
+			}
+		}else{
+			displayCol = 0;
+			displayRow ++;
+			if(displayRow == 25){
+				scrollScreen();
+				displayRow = 24;
+				displayCol = 0;
+			}
+		}
 	}
-	
+	tail = displayCol;
 	updateCursor(displayRow, displayCol);
 }
 
