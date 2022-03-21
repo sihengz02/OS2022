@@ -59,5 +59,5 @@ size of user program is not greater than 200*512 bytes, i.e., 100KB
 
 void loadUMain(void) {
 	// TODO: 参照bootloader加载内核的方式
-	enterUserSpace(uMainEntry);
+	//enterUserSpace(uMainEntry);
 }

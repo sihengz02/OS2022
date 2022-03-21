@@ -79,7 +79,7 @@ void KeyboardHandle(struct TrapFrame *tf){
 		// FIXME: 注意输入的大小写的实现、不可打印字符的处理
 		char ch = getChar(code);
 		if(ch != 0){
-			//putChar(ch);
+			putChar(ch);
 			uint16_t data = ch | (0x0c<<8);
 			//keyBuffer[bufferTail ++] = ch;
 			//bufferTail %= MAX_KEYBUFFER_SIZE;

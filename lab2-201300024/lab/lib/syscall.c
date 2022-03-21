@@ -57,6 +57,7 @@ int32_t syscall(int num, uint32_t a1,uint32_t a2,
 
 char getChar(){ // 对应SYS_READ STD_IN
 	// TODO: 实现getChar函数，方式不限
+	return 0;
 }
 
 void getStr(char *str, int size){ // 对应SYS_READ STD_STR
@@ -69,22 +70,49 @@ int hex2Str(uint32_t hexadecimal, char *buffer, int size, int count);
 int str2Str(char *string, char *buffer, int size, int count);
 
 void printf(const char *format,...){
-	int i=0; // format index
+	int i = 0; // format index
 	char buffer[MAX_BUFFER_SIZE];
-	int count=0; // buffer index
-	int index=0; // parameter index
-	void *paraList=(void*)&format; // address of format in stack
-	int state=0; // 0: legal character; 1: '%'; 2: illegal format
-	int decimal=0;
-	uint32_t hexadecimal=0;
-	char *string=0;
-	char character=0;
-	while(format[i]!=0){
-		buffer[count] = format[i];
-		count++;
-		// TODO: in lab2
+	int count = 0; // buffer index
+	int index = 0; // parameter index
+
+	void *paraList = (void*)&format; // address of format in stack
+	// int state = 0; // 0: legal character; 1: '%'; 2: illegal format
+
+	int decimal = 0;
+	uint32_t hexadecimal = 0;
+	char *string = 0;
+	char character = 0;
+	while(format[i] != 0){
+		// DONE: in lab2
+		if(format[i] == '%'){
+			i ++;
+			index ++;
+			switch(format[i]){
+				case 'd':
+					decimal = *((int*)(paraList + 4*i));
+					count = dec2Str(decimal, buffer, MAX_BUFFER_SIZE, count);
+					break;
+				case 'x':
+					hexadecimal = *((uint32_t*)(paraList + 4*i));
+					count = hex2Str(hexadecimal, buffer, MAX_BUFFER_SIZE, count);
+					break;
+				case 's':
+					string = *((char**)(paraList + 4*i));
+					count = str2Str(string, buffer, MAX_BUFFER_SIZE, count);
+					break;
+				case 'c':
+					character = *((char*)(paraList + 4*i));
+					buffer[count ++] = character;
+					break;
+				default: break;
+			}
+		}else{
+			buffer[count] = format[i];
+			count ++;
+		}
+		i ++;
 	}
-	if(count!=0)
+	if(count != 0)
 		syscall(SYS_WRITE, STD_OUT, (uint32_t)buffer, (uint32_t)count, 0, 0);
 }
 
