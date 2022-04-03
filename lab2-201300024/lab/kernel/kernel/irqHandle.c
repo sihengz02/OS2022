@@ -56,7 +56,7 @@ void GProtectFaultHandle(struct TrapFrame *tf){
 void KeyboardHandle(struct TrapFrame *tf){
 	uint32_t code = getKeyCode();
 	if(code == 0xe){ // 退格符
-		// FIXME: 要求只能退格用户键盘输入的字符串，且最多退到当行行首
+		// DONE: 要求只能退格用户键盘输入的字符串，且最多退到当行行首
 		if(displayCol>0 && displayCol>tail){
 			displayCol --;
 			uint16_t data = 0 | (0x0c << 8);
@@ -64,9 +64,9 @@ void KeyboardHandle(struct TrapFrame *tf){
 			asm volatile("movw %0, (%1)"::"r"(data),"r"(pos+0xb8000));
 		}
 	}else if(code == 0x1c){ // 回车符
-		// FIXME: 处理回车情况
-		//keyBuffer[bufferTail ++] = '\n';
-		//bufferTail %= MAX_KEYBUFFER_SIZE;
+		// DONE: 处理回车情况
+		keyBuffer[bufferTail ++] = '\n';
+		bufferTail %= MAX_KEYBUFFER_SIZE;
 		displayRow ++;
 		displayCol = 0;
 		tail = 0;
@@ -76,13 +76,13 @@ void KeyboardHandle(struct TrapFrame *tf){
 			displayCol = 0;
 		}
 	}else if(code < 0x81){ // 正常字符
-		// FIXME: 注意输入的大小写的实现、不可打印字符的处理
+		// DONE: 注意输入的大小写的实现、不可打印字符的处理
 		char ch = getChar(code);
 		if(ch != 0){
 			putChar(ch);
 			uint16_t data = ch | (0x0c<<8);
-			//keyBuffer[bufferTail ++] = ch;
-			//bufferTail %= MAX_KEYBUFFER_SIZE;
+			keyBuffer[bufferTail ++] = ch;
+			bufferTail %= MAX_KEYBUFFER_SIZE;
 			int pos = (80*displayRow + displayCol)*2;
 			asm volatile("movw %0, (%1)"::"r"(data),"r"(pos+0xb8000));
 			displayCol ++;
@@ -174,9 +174,58 @@ void syscallRead(struct TrapFrame *tf){
 }
 
 void syscallGetChar(struct TrapFrame *tf){
-	// TODO: 自由实现
+	// DONE: 自由实现
+	bufferHead = 0;
+	bufferTail = 0;
+	keyBuffer[bufferHead] = 0;
+	keyBuffer[bufferHead + 1] = 0;
+	char get = 0;
+	
+	while(get == 0){
+		enableInterrupt();
+		get = keyBuffer[bufferHead];
+		//putChar(get);
+		disableInterrupt();
+	}
+	tf->eax = get;
+
+	char end = 0;
+	while(end == 0){
+		enableInterrupt();
+		end = keyBuffer[bufferHead + 1];
+		disableInterrupt();
+	} 
 }
 
 void syscallGetStr(struct TrapFrame *tf){
-	// TODO: 自由实现
+	// DONE: 自由实现
+	bufferHead = 0;
+	bufferTail = 0;
+	char *str = (char *)tf->edx;
+	int size = (int)tf->ebx;
+
+	for(int i = 0; i < MAX_KEYBUFFER_SIZE; i++){
+		keyBuffer[i] = 0;
+	}
+
+	int i = 0;
+	char end = 0;
+	while(end !='\n' && i < size){
+
+		while(keyBuffer[i] == 0){
+			enableInterrupt();
+		}
+		end = keyBuffer[i];
+		i++;
+		disableInterrupt();
+	}
+
+	int selector = USEL(SEG_UDATA);
+	asm volatile("movw %0, %%es"::"m"(selector));
+	int k = 0;
+	for(int p=bufferHead;p<i-1;p++){
+		asm volatile("movb %0, %%es:(%1)"::"r"(keyBuffer[p]),"r"(str+k));
+		k++;
+	}
+	asm volatile("movb $0x00, %%es:(%0)"::"r"(str+i));
 }
