@@ -82,6 +82,7 @@ void printf(const char *format,...){
 	uint32_t hexadecimal = 0;
 	char *string = 0;
 	char character = 0;
+
 	while(format[i] != 0){
 		// DONE: in lab2
 		if(format[i] == '%'){
@@ -89,19 +90,19 @@ void printf(const char *format,...){
 			index ++;
 			switch(format[i]){
 				case 'd':
-					decimal = *((int*)(paraList + 4*i));
+					decimal = *((int*)(paraList + 4*index));
 					count = dec2Str(decimal, buffer, MAX_BUFFER_SIZE, count);
 					break;
 				case 'x':
-					hexadecimal = *((uint32_t*)(paraList + 4*i));
+					hexadecimal = *((uint32_t*)(paraList + 4*index));
 					count = hex2Str(hexadecimal, buffer, MAX_BUFFER_SIZE, count);
 					break;
 				case 's':
-					string = *((char**)(paraList + 4*i));
+					string = *((char**)(paraList + 4*index));
 					count = str2Str(string, buffer, MAX_BUFFER_SIZE, count);
 					break;
 				case 'c':
-					character = *((char*)(paraList + 4*i));
+					character = *((char*)(paraList + 4*index));
 					buffer[count ++] = character;
 					break;
 				default: break;

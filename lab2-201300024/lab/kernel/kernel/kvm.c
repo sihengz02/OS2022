@@ -60,7 +60,7 @@ size of user program is not greater than 200*512 bytes, i.e., 100KB
 */
 
 void loadUMain(void) {
-	// FIXME: 参照bootloader加载内核的方式
+	// DONE: 参照bootloader加载内核的方式
 	unsigned int phoff = 0x34; // program header offset
 	unsigned int elf = 0x200000; // physical memory addr to load
 	unsigned int uMainEntry = 0x0;
