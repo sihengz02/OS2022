@@ -211,21 +211,19 @@ void syscallGetStr(struct TrapFrame *tf){
 	int i = 0;
 	char end = 0;
 	while(end !='\n' && i < size){
-
 		while(keyBuffer[i] == 0){
 			enableInterrupt();
 		}
 		end = keyBuffer[i];
-		i++;
+		i ++;
 		disableInterrupt();
 	}
 
-	int selector = USEL(SEG_UDATA);
-	asm volatile("movw %0, %%es"::"m"(selector));
-	int k = 0;
-	for(int p=bufferHead;p<i-1;p++){
-		asm volatile("movb %0, %%es:(%1)"::"r"(keyBuffer[p]),"r"(str+k));
-		k++;
+	int sel = USEL(SEG_UDATA);
+	asm volatile("movw %0, %%es"::"m"(sel));
+
+	for(int j = bufferHead; j < i-1; j ++){
+		asm volatile("movb %0, %%es:(%1)"::"r"(keyBuffer[j]),"r"(str + j - bufferHead));
 	}
-	asm volatile("movb $0x00, %%es:(%0)"::"r"(str+i));
+	asm volatile("movb $0x00, %%es:(%0)"::"r"(str + i));
 }
