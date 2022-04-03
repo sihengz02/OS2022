@@ -1,7 +1,7 @@
 #include "boot.h"
 
 #define SECTSIZE 512
-
+#define PT_LOAD 1
 /*
 void bootMain(void) {
 	int i = 0;
@@ -16,24 +16,36 @@ void bootMain(void) {
 */
 
 void bootMain(void) {
-	int i = 0;
-	int phoff = 0x34;
-	int offset = 0x1000;
-	unsigned int elf = 0x100000;
+	unsigned int phoff = 0x34;
+	unsigned int elf = 0x500000;
 	void (*kMainEntry)(void);
 	kMainEntry = (void(*)(void))0x100000;
 
-	for (i = 0; i < 200; i++) {
+	for (int i = 0; i < 200; i++) {
 		readSect((void*)(elf + i*512), 1+i);
 	}
 
-	// FIXME: 填写kMainEntry、phoff、offset
-	kMainEntry = (void(*)(void))((struct ELFHeader *)elf)->entry;
-	phoff = ((struct ELFHeader *)elf)->phoff;
-	offset = ((struct ProgramHeader *)(elf + phoff))->off;
+	// DONE: 填写kMainEntry、phoff、offset
+	// 这个地方的框架代码有些问题，导致框架代码的运行与否依赖于gcc版本，故修改了框架代码；详细细节见实验报告
+	struct ELFHeader *header = (struct ELFHeader *)elf;
+	kMainEntry = (void(*)(void))header->entry;
+	phoff = header->phoff;
+	unsigned short phnum = header->phnum;
+	struct ProgramHeader * pheader =(struct ProgramHeader *)(elf + phoff);
 
-	for (i = 0; i < 200 * 512; i++) {
-		*(unsigned char *)(elf + i) = *(unsigned char *)(elf + i + offset);
+	for(int i = 0; i < phnum; i++){
+		if((pheader + i)->type == PT_LOAD){
+			unsigned int off = (pheader + i)->off;
+			unsigned int addr = (pheader + i)->vaddr;
+			unsigned int filesz = (pheader + i)->filesz;
+			unsigned int memsz = (pheader + i)->memsz;
+			for(int j = 0; j< filesz; j++){
+				*(unsigned char *)(addr + j) = *(unsigned char *)(elf + off + j);
+			}
+			for(int j = filesz; j < memsz; j++){
+				*(unsigned char *)(addr + j) = (unsigned char)0;
+			}
+		}
 	}
 
 	kMainEntry();

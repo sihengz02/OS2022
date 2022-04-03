@@ -5,9 +5,7 @@
 void kEntry(void) {
 
 	// Interruption is disabled in bootloader
-	assert(0);
 	initSerial();	// initialize serial port
-	putStr("Here!\n\n");
 	// DONE: 做一系列初始化
 	initIdt();      // initialize idt
 	initIntr();		// iniialize 8259a
