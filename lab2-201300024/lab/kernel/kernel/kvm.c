@@ -1,5 +1,7 @@
 #include "x86.h"
 #include "device.h"
+#define PT_LOAD 1
+#define ELF_MAGIC 0x464c457f
 
 SegDesc gdt[NR_SEGMENTS];       // the new GDT, NR_SEGMENTS=7, defined in x86/memory.h
 TSS tss;
@@ -58,23 +60,40 @@ size of user program is not greater than 200*512 bytes, i.e., 100KB
 */
 
 void loadUMain(void) {
-	// TODO: 参照bootloader加载内核的方式
-	int i = 0;
-	int phoff = 0x34; // program header offset
-	int offset = 0x1000; // .text section offset
-	uint32_t elf = 0x200000; // physical memory addr to load
-	uint32_t uMainEntry = 0x200000;
+	// FIXME: 参照bootloader加载内核的方式
+	unsigned int phoff = 0x34; // program header offset
+	unsigned int elf = 0x200000; // physical memory addr to load
+	unsigned int uMainEntry = 0x0;
 
-	for (i = 0; i < 200; i++) {
+	for (int i = 0; i < 200; i++) {
 		readSect((void*)(elf + i*512), 201+i);
 	}
-	
-	uMainEntry = ((struct ELFHeader *)elf)->entry; // entry address of the program
-	phoff = ((struct ELFHeader *)elf)->phoff;
-	offset = ((struct ProgramHeader *)(elf + phoff))->off;
 
-	for (i = 0; i < 200 * 512; i++) {
-		*(uint8_t *)(elf + i) = *(uint8_t *)(elf + i + offset);
+	struct ELFHeader *header = (struct ELFHeader *)elf;
+	assert(header->magic == ELF_MAGIC);
+	uMainEntry = header->entry;
+	phoff = header->phoff;
+	unsigned short phnum = header->phnum;
+	struct ProgramHeader pheader[phnum];
+	struct ProgramHeader *ph = (struct ProgramHeader *)(elf + phoff);
+
+	for(int i = 0; i < phnum; i++) {
+		pheader[i] = *(ph + i);
+	}
+
+	for(int i = 0; i < phnum; i++){
+		if(pheader[i].type == PT_LOAD){
+			unsigned int off = pheader[i].off;
+			unsigned int addr = pheader[i].vaddr;
+			unsigned int filesz = pheader[i].filesz;
+			unsigned int memsz = pheader[i].memsz;
+			for(int j = 0; j< filesz; j++){
+				*(unsigned char *)(addr + j + elf) = *(unsigned char *)(elf + off + j);
+			}
+			for(int j = filesz; j < memsz; j++){
+				*(unsigned char *)(addr + j + elf) = (unsigned char)0;
+			}
+		}
 	}
 
 	enterUserSpace(uMainEntry);
