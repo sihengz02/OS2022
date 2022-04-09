@@ -177,10 +177,11 @@ void syscallFork(struct StackFrame *sf){
 void syscallExec(struct StackFrame *sf) {
 	// TODO 完成exec
 	// hint: 用loadelf，已经封装好了
+	/*
 	uint32_t entry = 0;
 	uint32_t secstart = 0;
 	uint32_t secnum =  0;
-	
+	*/
 }
 
 
