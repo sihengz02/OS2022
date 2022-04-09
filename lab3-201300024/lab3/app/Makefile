@@ -4,7 +4,7 @@ LD = ld
 CFLAGS = -m32 -march=i386 -static \
 	 -fno-builtin -fno-stack-protector -fno-omit-frame-pointer \
 	 -Wall -Werror -O2 -I../lib
-LDFLAGS = -m elf_i386
+LDFLAGS = -m elf_i386 -z noseparate-code
 
 UCFILES = $(shell find ./ -name "*.c")
 LCFILES = $(shell find ../lib -name "*.c")
