@@ -61,17 +61,7 @@ void GProtectFaultHandle(struct StackFrame *sf) {
 void timerHandle(struct StackFrame *sf){
 	//TODO 完成进程调度，建议使用时间片轮转，按顺序调度
 
-	for(int i = 0; i < MAX_PCB_NUM; i++){
-		if(pcb[i].state == STATE_BLOCKED){
-			pcb[i].sleepTime--;
-			if(pcb[i].sleepTime == 0){
-				pcb[i].state = STATE_RUNNABLE;
-			}
-		}
-	}
-		
-	pcb[current].timeCount ++;
-
+/*	
 	if (pcb[current].timeCount > MAX_TIME_COUNT) {
 		pcb[current].state = STATE_RUNNABLE;
 		pcb[current].timeCount = 0;
@@ -94,7 +84,64 @@ void timerHandle(struct StackFrame *sf){
 	asm volatile("popl %ds");
 	asm volatile("popal");
 	asm volatile("addl $8, %esp");
-	asm volatile("iret");
+	asm volatile("iret"); */
+
+	for(int i = 1; i<MAX_PCB_NUM; i++){
+		if(pcb[i].state == STATE_BLOCKED){
+			pcb[i].sleepTime--;
+			if(pcb[i].sleepTime == 0){
+				pcb[i].state = STATE_RUNNABLE;
+			}
+		}
+	}
+
+	pcb[current].timeCount ++;
+
+	if(pcb[current].timeCount >= MAX_TIME_COUNT || pcb[current].state == STATE_DEAD \
+	 	 || pcb[current].state == STATE_BLOCKED || current == 0){	
+
+		for(int i = 1; i < MAX_PCB_NUM; i++){		
+			if(pcb[i].state == STATE_RUNNABLE && i != current){
+				if(pcb[current].state == STATE_RUNNING){
+					pcb[current].state = STATE_RUNNABLE;;
+					pcb[current].timeCount = 0;
+				}			
+				current = i;
+				pcb[i].state = STATE_RUNNING;
+				
+				uint32_t tmpStackTop = pcb[current].stackTop;
+ 				pcb[current].stackTop = pcb[current].prevStackTop;
+ 				tss.esp0 = (uint32_t)&(pcb[current].stackTop);
+ 				asm volatile("movl %0, %%esp"::"m"(tmpStackTop)); // switch kernel stack
+ 				asm volatile("popl %gs");
+ 				asm volatile("popl %fs");
+				asm volatile("popl %es");
+ 				asm volatile("popl %ds");
+ 				asm volatile("popal");
+ 				asm volatile("addl $8, %esp");
+ 				asm volatile("iret");
+				return ;
+			}
+		}
+		
+				
+		if(pcb[current].state == STATE_RUNNING){
+			pcb[current].state = STATE_RUNNABLE;;
+			pcb[current].timeCount = 0;
+		}
+		current = 0;
+		uint32_t tmpStackTop = pcb[current].stackTop;
+ 		pcb[current].stackTop = pcb[current].prevStackTop;
+ 		tss.esp0 = (uint32_t)&(pcb[current].stackTop);
+ 		asm volatile("movl %0, %%esp"::"m"(tmpStackTop)); // switch kernel stack
+ 		asm volatile("popl %gs");
+ 		asm volatile("popl %fs");
+		asm volatile("popl %es");
+ 		asm volatile("popl %ds");
+ 		asm volatile("popal");
+ 		asm volatile("addl $8, %esp");
+ 		asm volatile("iret");
+	}
 }
 
 
@@ -194,7 +241,7 @@ void syscallFork(struct StackFrame *sf){
 		return;
 	}
 
-	//TODO 拷贝地址空间
+	// 拷贝地址空间
 
 	for(int j = 0; j < 0x100000; j++){
 		*(unsigned char *)((i+1)*0x100000 + j) = *(unsigned char *)((current+1)*0x100000 + j);
