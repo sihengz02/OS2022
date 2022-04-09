@@ -59,7 +59,7 @@ void GProtectFaultHandle(struct StackFrame *sf) {
 }
 
 void timerHandle(struct StackFrame *sf){
-	//FIXME 完成进程调度，建议使用时间片轮转，按顺序调度
+	//TODO 完成进程调度，建议使用时间片轮转，按顺序调度
 
 	for(int i = 0; i < MAX_PCB_NUM; i++){
 		if(pcb[i].state == STATE_BLOCKED){
@@ -180,15 +180,25 @@ void memcpy(void* dst,void* src,size_t size){
 }
 
 void syscallFork(struct StackFrame *sf){
-	//TODO 完善它
-
 	//TODO 查找空闲pcb，如果没有就返回-1
-	int i=0;
 
-
+	int i = 1;
+	for(; i < MAX_PCB_NUM; i++){
+		if(pcb[i].state == STATE_DEAD){
+			pcb[current].regs.eax = i;
+			break;
+		}
+	}
+	if(i == MAX_PCB_NUM){
+		pcb[current].regs.eax = -1;
+		return;
+	}
 
 	//TODO 拷贝地址空间
 
+	for(int j = 0; j < 0x100000; j++){
+		*(unsigned char *)((i+1)*0x100000 + j) = *(unsigned char *)((current+1)*0x100000 + j);
+	}
 
 	// 拷贝pcb，这部分代码给出了，请注意理解
 	memcpy(&pcb[i],&pcb[current],sizeof(ProcessTable));
@@ -203,6 +213,7 @@ void syscallFork(struct StackFrame *sf){
 	pcb[i].stackTop = (uint32_t)&(pcb[i].regs);
 	pcb[i].prevStackTop = (uint32_t)&(pcb[i].stackTop);
 	pcb[i].state = STATE_RUNNABLE;
+	pcb[i].pid = i;
 	pcb[i].timeCount = 0;
 	pcb[i].sleepTime = 0;
 }	
@@ -220,11 +231,14 @@ void syscallExec(struct StackFrame *sf) {
 
 
 void syscallSleep(struct StackFrame *sf){
-	//TODO:实现它
-
+	//DONE:实现它
+	pcb[current].state = STATE_BLOCKED;
+	pcb[current].sleepTime = sf->ecx;
+	asm volatile("int $0x20");
 }	
 
 void syscallExit(struct StackFrame *sf){
-	//TODO 先设置成dead，然后用int 0x20进入调度
-
+	//DONE 先设置成dead，然后用int 0x20进入调度
+	pcb[current].state = STATE_DEAD;
+	asm volatile("int $0x20");
 }
