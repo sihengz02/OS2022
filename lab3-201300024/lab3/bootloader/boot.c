@@ -37,7 +37,7 @@ void bootMain(void) {
 	phnum = ((struct ELFHeader *)elf)->phnum;
 
 	for(i = 0; i < phnum; i++){
-		thisph = ((struct ProgramHeader *)(elf + phoff));
+		thisph = ((struct ProgramHeader *)(elf + phoff) + i); // this place miss i
 		if(thisph->type == PH_LOAD){
 			load_memcpy((void *)thisph->vaddr, ((void *)elf+thisph->off), thisph->filesz);
 			load_memset((void *)thisph->vaddr+thisph->filesz, 0, thisph->memsz-thisph->filesz);
