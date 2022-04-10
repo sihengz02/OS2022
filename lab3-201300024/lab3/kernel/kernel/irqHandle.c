@@ -61,31 +61,6 @@ void GProtectFaultHandle(struct StackFrame *sf) {
 void timerHandle(struct StackFrame *sf){
 	//TODO 完成进程调度，建议使用时间片轮转，按顺序调度
 
-/*	
-	if (pcb[current].timeCount > MAX_TIME_COUNT) {
-		pcb[current].state = STATE_RUNNABLE;
-		pcb[current].timeCount = 0;
-		for (int i = (current + 1) % MAX_PCB_NUM; i != current; i = (i + 1) % MAX_PCB_NUM){
-			if (pcb[i].state == STATE_RUNNABLE){
-				current = i;
-				break;
-			}
-		}
-		pcb[current].state = STATE_RUNNING;
-	}
-
-	uint32_t tmpStackTop = pcb[current].stackTop;
-	pcb[current].stackTop = pcb[current].prevStackTop;
-	tss.esp0 = (uint32_t)&(pcb[current].stackTop);
-	asm volatile("movl %0, %%esp"::"m"(tmpStackTop)); // switch kernel stack
-	asm volatile("popl %gs");
-	asm volatile("popl %fs");
-	asm volatile("popl %es");
-	asm volatile("popl %ds");
-	asm volatile("popal");
-	asm volatile("addl $8, %esp");
-	asm volatile("iret"); */
-
 	for(int i = 1; i<MAX_PCB_NUM; i++){
 		if(pcb[i].state == STATE_BLOCKED){
 			pcb[i].sleepTime--;
@@ -98,14 +73,14 @@ void timerHandle(struct StackFrame *sf){
 	pcb[current].timeCount ++;
 
 	if(pcb[current].timeCount >= MAX_TIME_COUNT || pcb[current].state == STATE_DEAD \
-	 	 || pcb[current].state == STATE_BLOCKED || current == 0){	
+	 	 || pcb[current].state == STATE_BLOCKED || current == 0){
 
-		for(int i = 1; i < MAX_PCB_NUM; i++){		
+		for(int i = 1; i < MAX_PCB_NUM; i++){
 			if(pcb[i].state == STATE_RUNNABLE && i != current){
 				if(pcb[current].state == STATE_RUNNING){
-					pcb[current].state = STATE_RUNNABLE;;
+					pcb[current].state = STATE_RUNNABLE;
 					pcb[current].timeCount = 0;
-				}			
+				}
 				current = i;
 				pcb[i].state = STATE_RUNNING;
 				
@@ -126,10 +101,11 @@ void timerHandle(struct StackFrame *sf){
 		
 				
 		if(pcb[current].state == STATE_RUNNING){
-			pcb[current].state = STATE_RUNNABLE;;
+			pcb[current].state = STATE_RUNNABLE;
 			pcb[current].timeCount = 0;
 		}
 		current = 0;
+
 		uint32_t tmpStackTop = pcb[current].stackTop;
  		pcb[current].stackTop = pcb[current].prevStackTop;
  		tss.esp0 = (uint32_t)&(pcb[current].stackTop);
