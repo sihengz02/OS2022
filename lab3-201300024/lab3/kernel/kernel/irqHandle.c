@@ -85,15 +85,15 @@ void timerHandle(struct StackFrame *sf){
 				pcb[i].state = STATE_RUNNING;
 				
 				uint32_t tmpStackTop = pcb[current].stackTop;
- 				pcb[current].stackTop = pcb[current].prevStackTop;
+				pcb[current].stackTop = pcb[current].prevStackTop;
  				tss.esp0 = (uint32_t)&(pcb[current].stackTop);
  				asm volatile("movl %0, %%esp"::"m"(tmpStackTop)); // switch kernel stack
  				asm volatile("popl %gs");
  				asm volatile("popl %fs");
 				asm volatile("popl %es");
- 				asm volatile("popl %ds");
- 				asm volatile("popal");
- 				asm volatile("addl $8, %esp");
+				asm volatile("popl %ds");
+				asm volatile("popal");
+				asm volatile("addl $8, %esp");
  				asm volatile("iret");
 				return ;
 			}
@@ -217,10 +217,14 @@ void syscallFork(struct StackFrame *sf){
 	}
 
 	//DONE 拷贝地址空间
-
+	enableInterrupt();
 	for(int j = 0; j < 0x100000; j++){
 		*(unsigned char *)((i+1)*0x100000 + j) = *(unsigned char *)((current+1)*0x100000 + j);
+		if(j % 0x100 == 0){
+			asm volatile("int $0x20");
+		}
 	}
+	disableInterrupt();
 
 	// 拷贝pcb，这部分代码给出了，请注意理解
 	memcpy(&pcb[i],&pcb[current],sizeof(ProcessTable));
@@ -244,7 +248,7 @@ void syscallFork(struct StackFrame *sf){
 void syscallExec(struct StackFrame *sf) {
 	// DONE 完成exec
 	// hint: 用loadelf，已经封装好了
-	
+
 	if(current == 0) assert(0);
 	uint32_t entry = 0;
 	uint32_t secstart = sf->ecx;
