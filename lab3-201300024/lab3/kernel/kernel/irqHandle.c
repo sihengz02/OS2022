@@ -59,9 +59,9 @@ void GProtectFaultHandle(struct StackFrame *sf) {
 }
 
 void timerHandle(struct StackFrame *sf){
-	//TODO 完成进程调度，建议使用时间片轮转，按顺序调度
+	//DONE 完成进程调度，建议使用时间片轮转，按顺序调度
 
-	for(int i = 1; i<MAX_PCB_NUM; i++){
+	for(int i = 1; i < MAX_PCB_NUM; i++){
 		if(pcb[i].state == STATE_BLOCKED){
 			pcb[i].sleepTime--;
 			if(pcb[i].sleepTime == 0){
@@ -99,7 +99,6 @@ void timerHandle(struct StackFrame *sf){
 			}
 		}
 		
-				
 		if(pcb[current].state == STATE_RUNNING){
 			pcb[current].state = STATE_RUNNABLE;
 			pcb[current].timeCount = 0;
@@ -203,7 +202,7 @@ void memcpy(void* dst,void* src,size_t size){
 }
 
 void syscallFork(struct StackFrame *sf){
-	//TODO 查找空闲pcb，如果没有就返回-1
+	//DONE 查找空闲pcb，如果没有就返回-1
 
 	int i = 1;
 	for(; i < MAX_PCB_NUM; i++){
@@ -217,7 +216,7 @@ void syscallFork(struct StackFrame *sf){
 		return;
 	}
 
-	// 拷贝地址空间
+	//DONE 拷贝地址空间
 
 	for(int j = 0; j < 0x100000; j++){
 		*(unsigned char *)((i+1)*0x100000 + j) = *(unsigned char *)((current+1)*0x100000 + j);
@@ -239,7 +238,7 @@ void syscallFork(struct StackFrame *sf){
 	pcb[i].pid = i;
 	pcb[i].timeCount = 0;
 	pcb[i].sleepTime = 0;
-}	
+}
 
 
 void syscallExec(struct StackFrame *sf) {
