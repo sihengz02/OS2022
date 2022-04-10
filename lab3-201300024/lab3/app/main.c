@@ -15,7 +15,7 @@ int uEntry(void) {
 			printf("Child Process: Pong %d, %d;\n", data, i);
 			sleep(60);
 		}
-		//exec(221, 20);
+		exec(221, 20);
 		exit();
 	}
 	else if (ret != -1) {

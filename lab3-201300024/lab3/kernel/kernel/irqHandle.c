@@ -242,13 +242,16 @@ void syscallFork(struct StackFrame *sf){
 
 
 void syscallExec(struct StackFrame *sf) {
-	// TODO 完成exec
+	// DONE 完成exec
 	// hint: 用loadelf，已经封装好了
-	/*
+	
+	if(current == 0) assert(0);
 	uint32_t entry = 0;
-	uint32_t secstart = 0;
-	uint32_t secnum =  0;
-	*/
+	uint32_t secstart = sf->ecx;
+	uint32_t secnum =  sf->edx;
+	loadelf(secstart, secnum, (current + 1) * 0x100000, &entry);
+	pcb[current].regs.eip = entry;
+	pcb[current].regs.eax = 0;
 }
 
 
